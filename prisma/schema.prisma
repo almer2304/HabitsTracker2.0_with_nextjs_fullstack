@@ -12,8 +12,91 @@ datasource db {
   provider = "mysql" 
 }
 
+model User {
+  id            Int           @id @default(autoincrement())
+  username      String        @unique
+  email         String        @unique
+  password      String
+  image         String?       // Untuk foto profil di komunitas
+  points        Int           @default(0)
+  level         Int           @default(1)
+  habits        Habit[]
+  posts         Post[]
+  comments      Comment[]
+  userBadges    UserBadge[]
+  notifications Notification[] // Fitur baru: Notifikasi
+  createdAt     DateTime      @default(now())
+}
+
 model Habit {
-  id        Int      @id @default(autoincrement())
-  title     String
-  createdAt DateTime @default(now())
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  category      String?
+  
+  // STATS UNTUK PORTOFOLIO (Optimization)
+  currentStreak Int           @default(0)
+  longestStreak Int           @default(0)
+  lastCompleted DateTime?     // Untuk cek apakah streak harus reset
+  logs          HabitLog[]
+  createdAt     DateTime      @default(now())
+}
+
+model HabitLog {
+  id            Int           @id @default(autoincrement())
+  habitId       Int
+  habit         Habit         @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  completedAt   DateTime      @default(now())
+  
+  // Mencegah double check-in di hari yang sama
+  @@unique([habitId, completedAt]) 
+}
+
+model Badge {
+  id            Int           @id @default(autoincrement())
+  name          String        @unique
+  description   String
+  imageIcon     String?
+  requirement   Int           
+  userBadges    UserBadge[]
+}
+
+model UserBadge {
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  badgeId       Int
+  user          User          @relation(fields: [userId], references: [id])
+  badge         Badge         @relation(fields: [badgeId], references: [id])
+  earnedAt      DateTime      @default(now())
+}
+
+model Post {
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content       String        @db.Text
+  createdAt     DateTime      @default(now())
+  comments      Comment[]
+}
+
+model Comment {
+  id            Int           @id @default(autoincrement())
+  postId        Int
+  userId        Int
+  post          Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content       String
+  createdAt     DateTime      @default(now())
+}
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  message    String
+  isRead     Boolean  @default(false)
+  type       String   // "BADGE", "COMMENT", "REMINDER"
+  createdAt  DateTime @default(now())
 }
