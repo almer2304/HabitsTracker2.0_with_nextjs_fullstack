@@ -1,123 +1,113 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql" 
+  provider = "postgresql"
 }
 
 model User {
-  id            Int           @id @default(autoincrement())
-  username      String        @unique
-  email         String        @unique
+  id            Int            @id @default(autoincrement())
+  username      String         @unique
+  email         String         @unique
   password      String
-  image         String?       // Untuk foto profil di komunitas
-  points        Int           @default(0)
-  level         Int           @default(1)
-  habits        Habit[]
-  posts         Post[]
-  comments      Comment[]
-  userBadges    UserBadge[]
-  notifications Notification[] // Fitur baru: Notifikasi
+  image         String?
+  points        Int            @default(0)
+  level         Int            @default(1)
+  createdAt     DateTime       @default(now())
   accounts      Account[]
+  comments      Comment[]
+  habits        Habit[]
+  notifications Notification[]
+  posts         Post[]
   sessions      Session[]
-  createdAt     DateTime      @default(now())
+  userBadges    UserBadge[]
 }
 
 model Habit {
-  id            Int           @id @default(autoincrement())
+  id            Int        @id @default(autoincrement())
   userId        Int
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   title         String
   description   String?
   category      String?
-  
-  // STATS UNTUK PORTOFOLIO (Optimization)
-  currentStreak Int           @default(0)
-  longestStreak Int           @default(0)
-  lastCompleted DateTime?     // Untuk cek apakah streak harus reset
+  currentStreak Int        @default(0)
+  longestStreak Int        @default(0)
+  lastCompleted DateTime?
+  createdAt     DateTime   @default(now())
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   logs          HabitLog[]
-  createdAt     DateTime      @default(now())
 }
 
 model HabitLog {
-  id            Int           @id @default(autoincrement())
-  habitId       Int
-  habit         Habit         @relation(fields: [habitId], references: [id], onDelete: Cascade)
-  completedAt   DateTime      @default(now())
-  
-  // Mencegah double check-in di hari yang sama
-  @@unique([habitId, completedAt]) 
+  id          Int      @id @default(autoincrement())
+  habitId     Int
+  completedAt DateTime @default(now())
+  habit       Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, completedAt])
 }
 
 model Badge {
-  id            Int           @id @default(autoincrement())
-  name          String        @unique
-  description   String
-  imageIcon     String?
-  requirement   Int           
-  userBadges    UserBadge[]
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  description String
+  imageIcon   String?
+  requirement Int
+  userBadges  UserBadge[]
 }
 
 model UserBadge {
-  id            Int           @id @default(autoincrement())
-  userId        Int
-  badgeId       Int
-  user          User          @relation(fields: [userId], references: [id])
-  badge         Badge         @relation(fields: [badgeId], references: [id])
-  earnedAt      DateTime      @default(now())
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  badgeId  Int
+  earnedAt DateTime @default(now())
+  badge    Badge    @relation(fields: [badgeId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 }
 
 model Post {
-  id            Int           @id @default(autoincrement())
-  userId        Int
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content       String        @db.Text
-  createdAt     DateTime      @default(now())
-  comments      Comment[]
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  content   String
+  createdAt DateTime  @default(now())
+  comments  Comment[]
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Comment {
-  id            Int           @id @default(autoincrement())
-  postId        Int
-  userId        Int
-  post          Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content       String
-  createdAt     DateTime      @default(now())
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  userId    Int
+  content   String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id])
-  message    String
-  isRead     Boolean  @default(false)
-  type       String   // "BADGE", "COMMENT", "REMINDER"
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String
+  isRead    Boolean  @default(false)
+  type      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             Int
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
