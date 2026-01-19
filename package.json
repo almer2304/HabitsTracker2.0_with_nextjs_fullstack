@@ -13,6 +13,7 @@
     "@auth/prisma-adapter": "^2.11.1",
     "@prisma/client": "^7.2.0",
     "cross-env": "^10.1.0",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "lucide-react": "^0.562.0",
@@ -20,6 +21,7 @@
     "next-auth": "^4.24.13",
     "pg": "^8.17.1",
     "react": "19.2.3",
+    "react-calendar-heatmap": "^1.10.0",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
@@ -27,6 +29,7 @@
     "@types/node": "^20",
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
+    "@types/react-calendar-heatmap": "^1.9.0",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "drizzle-kit": "^0.31.8",

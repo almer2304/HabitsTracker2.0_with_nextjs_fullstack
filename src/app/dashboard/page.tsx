@@ -1,58 +1,98 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { habits } from "@/db/schema/schema";
-import { eq } from "drizzle-orm";
+import { habits, users } from "@/db/schema/schema"; // Pastikan import tabel users juga
+import { eq, sql } from "drizzle-orm";
 import Sidebar from "@/components/Sidebar";
+import HabitHeatmap from "@/components/HabitHeatmap";
+import WelcomeModal from "@/components/WelcomeModal";
+import { Activity, Star, Flame } from "lucide-react";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  
-  // Ambil data asli dari database
-  const userHabits = await db.select()
-    .from(habits)
-    .where(eq(habits.userId, session?.user?.id as string));
+  const userId = session?.user?.id;
+
+  if (!userId) return null;
+
+  // 1. Ambil data User untuk XP (asumsi ada kolom xp di tabel users)
+  const userData = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+  });
+
+  // 2. Ambil semua habit user untuk menghitung streak atau rata-rata
+  const userHabits = await db.select().from(habits).where(eq(habits.userId, userId));
+
+  // Logic Sederhana: Ambil streak tertinggi dari semua habit yang dimiliki
+  const maxStreak = userHabits.length > 0 
+    ? Math.max(...userHabits.map(h => h.streak || 0)) 
+    : 0;
 
   return (
     <div className="flex bg-slate-950 min-h-screen text-slate-100">
       <Sidebar />
+      <WelcomeModal />
       
-      {/* Berikan ml-0 di HP dan ml-64 di Desktop */}
       <main className="w-full md:ml-64 p-4 md:p-8 pt-20 md:pt-8">
         <header className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold">Welcome back, {session?.user?.name}! 👋</h1>
-          <p className="text-slate-400 text-sm md:text-base">Siap untuk menaikkan level habit-mu hari ini?</p>
+          <h1 className="text-2xl md:text-3xl font-bold italic">COMMAND CENTER 🛡️</h1>
+          <p className="text-slate-400 text-sm">Welcome, {session?.user?.name}.</p>
         </header>
 
-        {/* Stats Grid: 1 kolom di HP, 3 kolom di Desktop */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-10">
-          <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl backdrop-blur-sm">
-            <p className="text-slate-400 text-sm">Total XP</p>
-            <h3 className="text-2xl md:text-3xl font-bold text-yellow-400">2,450 XP</h3>
+        {/* Overview Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          
+          {/* Streak Card */}
+          <div className="bg-slate-900/50 border border-slate-800 p-5 rounded-2xl flex items-center gap-4">
+            <div className="p-3 bg-orange-500/20 text-orange-500 rounded-xl"><Flame /></div>
+            <div>
+              <p className="text-slate-400 text-xs uppercase tracking-wider">Best Streak</p>
+              <h4 className="text-xl font-bold">
+                {maxStreak > 0 ? `${maxStreak} Days` : "No Data"}
+              </h4>
+            </div>
           </div>
-          <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl backdrop-blur-sm">
-            <p className="text-slate-400 text-sm">Current Streak</p>
-            <h3 className="text-2xl md:text-3xl font-bold text-orange-500">7 Days 🔥</h3>
+
+          {/* XP Card */}
+          <div className="bg-slate-900/50 border border-slate-800 p-5 rounded-2xl flex items-center gap-4">
+            <div className="p-3 bg-yellow-500/20 text-yellow-500 rounded-xl"><Star /></div>
+            <div>
+              <p className="text-slate-400 text-xs uppercase tracking-wider">Total XP</p>
+              <h4 className="text-xl font-bold">
+                {/* @ts-ignore (jika kolom xp belum dibuat di schema, default ke 0) */}
+                {userData?.xp ?? 0}
+              </h4>
+            </div>
           </div>
+
+          {/* Activity Card */}
+          <div className="bg-slate-900/50 border border-slate-800 p-5 rounded-2xl flex items-center gap-4">
+            <div className="p-3 bg-blue-500/20 text-blue-500 rounded-xl"><Activity /></div>
+            <div>
+              <p className="text-slate-400 text-xs uppercase tracking-wider">Habits Active</p>
+              <h4 className="text-xl font-bold">
+                {userHabits.length > 0 ? `${userHabits.length} Quests` : "No Active Habit"}
+              </h4>
+            </div>
+          </div>
+
         </div>
 
-        {/* Habit List */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 md:p-6">
-          <h2 className="text-xl font-semibold mb-4 text-center md:text-left">Daily Quests (Habits)</h2>
-          {userHabits.length === 0 ? (
-            <p className="text-slate-500 italic text-center">Belum ada habit. Mulai petualanganmu!</p>
-          ) : (
-            <div className="space-y-3">
-              {userHabits.map((habit) => (
-                <div key={habit.id} className="flex flex-col sm:flex-row items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-700 hover:border-blue-500 gap-4">
-                  <span className="font-medium">{habit.name}</span>
-                  <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-900/20 active:scale-95 transition-all">
-                    COMPLETE +10XP
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Heatmap Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            {userHabits.length > 0 ? (
+              <HabitHeatmap />
+            ) : (
+              <div className="bg-slate-900/50 border border-slate-800 p-10 rounded-2xl text-center italic text-slate-500">
+                Heatmap will appear once you complete a habit.
+              </div>
+            )}
+          </div>
+          
+          <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl flex flex-col items-center justify-center text-center">
+             <h3 className="text-lg font-semibold mb-2 text-blue-400">System Status</h3>
+             <p className="text-xs text-slate-500">All systems operational. Ready for questing.</p>
+          </div>
         </div>
       </main>
     </div>

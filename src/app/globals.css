@@ -1,26 +1,17 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Custom Heatmap Styling */
+.react-calendar-heatmap rect {
+  rx: 2; /* Membuat ujung kotak sedikit bulat */
+  ry: 2;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.react-calendar-heatmap .color-empty {
+  fill: #1e293b; /* Slate-800 */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+/* Warna Level Intensitas (Hijau Modern) */
+.react-calendar-heatmap .color-scale-1 { fill: #064e3b; }
+.react-calendar-heatmap .color-scale-2 { fill: #059669; }
+.react-calendar-heatmap .color-scale-3 { fill: #10b981; }
+.react-calendar-heatmap .color-scale-4 { fill: #34d399; }

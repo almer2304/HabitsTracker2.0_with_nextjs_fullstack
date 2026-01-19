@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Home, CheckSquare, Trophy, Settings, LogOut, Menu, X } from 'lucide-react';
+import { Home, CheckSquare, Trophy, Settings, LogOut, Menu, X, Award, Users} from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
 const menuItems = [
   { icon: Home, label: 'Dashboard', href: '/dashboard' },
   { icon: CheckSquare, label: 'My Habits', href: '/dashboard/habits' },
+  { icon: Award, label: 'Badges', href: '/dashboard/badges' }, // Menu Baru
+  { icon: Users, label: 'Community', href: '/dashboard/community' }, // Menu Baru
   { icon: Trophy, label: 'Leaderboard', href: '/dashboard/leaderboard' },
   { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
 ];
