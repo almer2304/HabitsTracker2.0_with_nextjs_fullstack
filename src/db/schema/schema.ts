@@ -67,7 +67,8 @@ export const habits = pgTable("habit", {
     .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description"),
-  category: text("category"),
+  category: text("category").default("General"), // Untuk sorting/filter
+  difficulty: text("difficulty").default("Easy"),
   currentStreak: integer("currentStreak").default(0).notNull(),
   longestStreak: integer("longestStreak").default(0).notNull(),
   lastCompleted: timestamp("lastCompleted"),
