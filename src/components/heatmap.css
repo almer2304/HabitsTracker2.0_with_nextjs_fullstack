@@ -1,0 +1,11 @@
+/* CSS untuk warna kotak heatmap */
+.react-calendar-heatmap .color-empty { fill: #1e293b; } /* Warna dasar gelap */
+.react-calendar-heatmap .color-scale-1 { fill: #1e3a8a; } /* Biru Tua */
+.react-calendar-heatmap .color-scale-2 { fill: #2563eb; } /* Biru */
+.react-calendar-heatmap .color-scale-3 { fill: #3b82f6; } /* Biru Muda */
+.react-calendar-heatmap .color-scale-4 { fill: #60a5fa; } /* Biru Terang */
+
+.react-calendar-heatmap rect {
+  rx: 4px; /* Membuat kotak agak rounded */
+  ry: 4px;
+}
