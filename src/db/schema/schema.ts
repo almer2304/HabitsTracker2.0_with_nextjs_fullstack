@@ -20,6 +20,7 @@ export const users = pgTable("user", {
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   password: text("password"), 
   image: text("image"),
+  xp: integer("xp").default(0),
   points: integer("points").default(0).notNull(),
   level: integer("level").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
