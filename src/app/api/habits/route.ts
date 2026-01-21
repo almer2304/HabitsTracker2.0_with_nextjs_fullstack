@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     const newHabit = await db.insert(habits).values({
       userId: session.user.id,
-      title,
+      title: title,
       category: category || "General",
       difficulty: difficulty || "Easy",
       currentStreak: 0,

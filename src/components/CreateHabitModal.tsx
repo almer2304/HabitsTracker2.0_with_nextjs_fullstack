@@ -13,7 +13,7 @@ export default function CreateHabitModal() {
     const res = await fetch("/api/habits", {
       method: "POST",
       body: JSON.stringify({
-        name: formData.get("name"),
+        title: formData.get("name"),
         category: formData.get("category"),
         difficulty: formData.get("difficulty"),
       }),
