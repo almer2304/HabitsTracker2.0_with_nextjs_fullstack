@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Flame, Trash2, CheckCircle2, Filter, ArrowUpDown, Target } from "lucide-react";
+import { Flame, Trash2, CheckCircle2, Filter, ArrowUpDown, Target, Trophy, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function HabitListClient({ initialData, userId }: { initialData: any[], userId: string }) {
   const router = useRouter();
@@ -10,29 +11,52 @@ export default function HabitListClient({ initialData, userId }: { initialData: 
   const [sortBy, setSortBy] = useState("newest");
 
   // Logika Check-in (Selesaikan Quest)
-  const handleCheckIn = async (habitId: number, difficulty: string) => {
-    // Tentukan XP Gain berdasarkan difficulty
-    const xpTable: Record<string, number> = { Easy: 10, Medium: 25, Hard: 50 };
-    const xpGain = xpTable[difficulty] || 10;
+ const handleCheckIn = async (habitId: number, difficulty: string) => {
+  const xpTable: Record<string, number> = { Easy: 10, Medium: 25, Hard: 50 };
+  const xpGain = xpTable[difficulty] || 10;
 
-    try {
-      const res = await fetch("/api/habits/checkin", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ habitId, xpGain }),
+  try {
+    const res = await fetch("/api/habits/checkin", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ habitId, xpGain }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      // 1. Notifikasi XP Biasa
+      toast.success(`Quest Clear! +${xpGain} XP`, {
+        icon: <Zap className="text-yellow-400" size={16} />,
       });
 
-      if (res.ok) {
-        alert("Quest Clear! XP + " + xpGain);
-        router.refresh(); // Update data secara real-time
-      } else {
-        const error = await res.json();
-        alert(error.error || "Gagal check-in");
+      // 2. Loop Notifikasi untuk setiap Badge Baru yang didapat
+      if (data.newBadges && data.newBadges.length > 0) {
+        data.newBadges.forEach((badge: any) => {
+          toast.custom((t) => (
+            <div className="bg-slate-900 border-2 border-blue-500 p-4 rounded-[2rem] shadow-[0_0_20px_rgba(59,130,246,0.3)] flex items-center gap-4 animate-in fade-in zoom-in duration-300">
+              <div className="bg-blue-600 p-3 rounded-full text-white shadow-lg">
+                <Trophy size={20} />
+              </div>
+              <div className="flex flex-col text-left">
+                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Achievement Unlocked!</p>
+                <h4 className="text-sm font-bold text-white uppercase italic tracking-tight">{badge.name}</h4>
+                <p className="text-[10px] text-slate-400 leading-tight">{badge.description}</p>
+              </div>
+            </div>
+          ), { duration: 6000 }); // Badge muncul lebih lama (6 detik)
+        });
       }
-    } catch (err) {
-      console.error(err);
+
+      router.refresh(); 
+    } else {
+      toast.error(data.error || "Gagal check-in");
     }
-  };
+  } catch (err) {
+    console.error(err);
+    toast.error("Terjadi kesalahan sistem.");
+  }
+};
 
   // Logika Hapus
   const handleDelete = async (id: number) => {

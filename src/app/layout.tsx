@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Providers } from "@/components/Providers"; // Import file yang baru dibuat
+import { Toaster } from "sonner";
 
 export default function RootLayout({
   children,
@@ -11,6 +12,7 @@ export default function RootLayout({
       <body>
         {/* Bungkus children dengan Providers */}
         <Providers>{children}</Providers>
+        <Toaster position="bottom-right" theme="dark" closeButton />
       </body>
     </html>
   );
