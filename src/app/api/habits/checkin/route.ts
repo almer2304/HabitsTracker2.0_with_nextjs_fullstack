@@ -135,6 +135,14 @@ export async function PATCH(req: Request) {
             const day = new Date().getDay();
             if (day === 0 || day === 6) isEligible = true;
             break;
+          case "Brave Recruit":
+            const joinedCount = await tx
+              .select({ count: sql<number>`count(*)::int` })
+              .from(communityMembers)
+              .where(eq(communityMembers.userId, userId));
+              
+            if (joinedCount[0].count >= badge.requirement) isEligible = true;
+            break;
         }
 
         if (isEligible) {
