@@ -146,3 +146,30 @@ export const userBadges = pgTable("user_badge", {
     .references(() => badges.id),
   earnedAt: timestamp("earnedAt").defaultNow().notNull(),
 });
+
+export const communities = pgTable("community", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  category: text("category"), // e.g., 'Coding', 'Health'
+  imageUrl: text("imageUrl"),
+  creatorId: text("creatorId").notNull().references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+export const communityMembers = pgTable("community_member", {
+  id: serial("id").primaryKey(),
+  communityId: integer("communityId").notNull().references(() => communities.id, { onDelete: "cascade" }),
+  userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").default("MEMBER"), // 'LEADER', 'MEMBER'
+  joinedAt: timestamp("joinedAt").defaultNow(),
+});
+
+export const communityPosts = pgTable("community_post", {
+  id: serial("id").primaryKey(),
+  communityId: integer("communityId").notNull().references(() => communities.id, { onDelete: "cascade" }),
+  userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  type: text("type").default("GENERAL"), // 'GENERAL', 'ACHIEVEMENT'
+  createdAt: timestamp("createdAt").defaultNow(),
+});
