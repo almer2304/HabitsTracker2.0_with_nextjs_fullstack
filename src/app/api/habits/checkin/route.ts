@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { habits, users, badges, userBadges } from "@/db/schema/schema";
+import { habits, users, badges, userBadges, communityMembers } from "@/db/schema/schema";
 import { eq, sql, and, isNotNull } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -80,6 +80,16 @@ export async function PATCH(req: Request) {
         .select({ maxStreak: sql<number>`max(${habits.currentStreak})::int` })
         .from(habits)
         .where(eq(habits.userId, userId));
+
+      const joinedCommunityResult = await tx.select({ count: sql<number>`count(*)::int` })
+        .from(communityMembers).where(eq(communityMembers.userId, userId));
+
+      const stats = {
+        xp: currentTotalXp,
+        streak: maxStreak[0].max || 0,
+        totalQuests: totalQuests[0].count || 0,
+        communities: joinedCommunityResult[0].count || 0
+      };
 
       const highestStreak = maxStreakRow[0].maxStreak || 0;
       const totalQuestsCount = totalCompletedQuests[0].count || 0;
