@@ -86,8 +86,8 @@ export async function PATCH(req: Request) {
 
       const stats = {
         xp: currentTotalXp,
-        streak: maxStreak[0].max || 0,
-        totalQuests: totalQuests[0].count || 0,
+        streak: maxStreakRow[0].max || 0,
+        totalQuests: totalCompletedQuests[0].count || 0,
         communities: joinedCommunityResult[0].count || 0
       };
 
