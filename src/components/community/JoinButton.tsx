@@ -2,18 +2,22 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function JoinButton({ communityId, isJoined }: { communityId: number; isJoined: boolean }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  if (isJoined) {
+    if (isJoined) {
     return (
-      <span className="px-4 py-2 bg-green-500/10 border border-green-500/30 text-green-500 text-[10px] font-black uppercase italic rounded-xl">
-        Joined
-      </span>
+        <Link 
+        href={`/dashboard/community/${communityId}`}
+        className="px-4 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-400 text-[10px] font-black uppercase italic rounded-xl hover:bg-blue-500/40 transition-all text-center"
+        >
+        Enter Guild Hall
+        </Link>
     );
-  }
+    }
 
   const handleJoin = async () => {
     setLoading(true);

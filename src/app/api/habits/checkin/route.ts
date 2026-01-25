@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { habits, users, badges, userBadges, communityMembers } from "@/db/schema/schema";
+import { habits, users, badges, userBadges, communityMembers, guildMessages } from "@/db/schema/schema";
 import { eq, sql, and, isNotNull } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -152,6 +152,23 @@ export async function PATCH(req: Request) {
               .where(eq(communityMembers.userId, userId));
               
             if (joinedCount[0].count >= badge.requirement) isEligible = true;
+            break;
+          case "Guild Vanguard": // Contoh badge khusus member aktif guild
+            const memberActivity = await tx
+              .select({ count: sql<number>`count(*)::int` })
+              .from(communityMembers)
+              .where(eq(communityMembers.userId, userId));
+            
+            // Jika sudah join komunitas dan punya XP besar dari guild quest
+            if (memberActivity[0].count >= 1 && stats.xp >= 1000) isEligible = true;
+            break;
+          case "Guild Strategist":
+            const msgCount = await tx
+              .select({ count: sql<number>`count(*)::int` })
+              .from(guildMessages)
+              .where(eq(guildMessages.userId, userId));
+              
+            if (msgCount[0].count >= 10) isEligible = true;
             break;
         }
 

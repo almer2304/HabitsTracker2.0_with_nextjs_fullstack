@@ -173,3 +173,32 @@ export const communityPosts = pgTable("community_post", {
   type: text("type").default("GENERAL"), // 'GENERAL', 'ACHIEVEMENT'
   createdAt: timestamp("createdAt").defaultNow(),
 });
+
+export const guildQuests = pgTable("guild_quest", {
+  id: serial("id").primaryKey(),
+  communityId: integer("communityId").notNull().references(() => communities.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  xpReward: integer("xpReward").default(100),
+  requirementCount: integer("requirementCount").default(1), // misal: harus check-in 5x
+  creatorId: text("creatorId").notNull().references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+// Tabel untuk melacak siapa yang sudah selesaikan misi guild
+export const userGuildQuestProgress = pgTable("user_guild_quest_progress", {
+  id: serial("id").primaryKey(),
+  userId: text("userId").notNull().references(() => users.id),
+  questId: integer("questId").notNull().references(() => guildQuests.id),
+  status: text("status").default("COMPLETED"), // 'IN_PROGRESS', 'COMPLETED'
+  completedAt: timestamp("completedAt").defaultNow(),
+});
+
+// Tambahkan di schema.ts
+export const guildMessages = pgTable("guild_message", {
+  id: serial("id").primaryKey(),
+  communityId: integer("communityId").notNull().references(() => communities.id, { onDelete: "cascade" }),
+  userId: text("userId").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
