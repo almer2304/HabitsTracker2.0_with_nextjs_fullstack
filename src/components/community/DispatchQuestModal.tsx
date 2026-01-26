@@ -30,16 +30,16 @@ export default function DispatchQuestModal({ isOpen, onClose, guildId }: Dispatc
           communityId: guildId,
           title,
           description,
-          xpReward,
+          xpReward: Number(xpReward), // Memastikan dikirim sebagai angka
         }),
       });
 
       if (res.ok) {
         toast.success("Guild Quest Dispatched to All Members!");
-        onClose();
-        // Reset form
         setTitle("");
         setDescription("");
+        setXpReward(100);
+        onClose();
       } else {
         const error = await res.json();
         toast.error(error.error || "Failed to dispatch quest.");
@@ -52,12 +52,16 @@ export default function DispatchQuestModal({ isOpen, onClose, guildId }: Dispatc
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-      <div className="bg-[#0f172a] border border-blue-500/40 p-8 rounded-[2.5rem] w-full max-w-lg shadow-[0_0_60px_rgba(37,99,235,0.15)] relative overflow-hidden">
+    /* Z-INDEX DITINGKATKAN KE 999 DAN BACKDROP DIPERTEBAL */
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4">
+      
+      {/* BACKGROUND DIUBAH MENJADI SOLID AGAR TIDAK BOCOR */}
+      <div className="bg-[#0f172a] border border-blue-500/40 p-8 rounded-[2.5rem] w-full max-w-lg shadow-[0_0_80px_rgba(0,0,0,0.8)] relative overflow-hidden">
+        
         {/* Dekorasi Aksen Neon */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
         
-        <header className="mb-8">
+        <header className="mb-8 relative z-10">
           <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter">
             Dispatch <span className="text-blue-500">Guild Quest</span>
           </h2>
@@ -66,7 +70,7 @@ export default function DispatchQuestModal({ isOpen, onClose, guildId }: Dispatc
           </p>
         </header>
 
-        <div className="space-y-5">
+        <div className="space-y-5 relative z-10">
           <div>
             <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-2 block tracking-widest">Quest Title</label>
             <input 
@@ -101,14 +105,16 @@ export default function DispatchQuestModal({ isOpen, onClose, guildId }: Dispatc
           </div>
         </div>
 
-        <div className="flex gap-4 mt-10">
+        <div className="flex gap-4 mt-10 relative z-10">
           <button 
+            type="button"
             onClick={onClose}
             className="flex-1 px-6 py-4 border border-slate-800 rounded-2xl font-black uppercase text-[10px] text-slate-500 hover:bg-slate-800 transition-colors italic"
           >
             Abort Mission
           </button>
           <button 
+            type="button"
             onClick={handleDispatch}
             disabled={loading}
             className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-2xl font-black uppercase text-[10px] text-white shadow-lg shadow-blue-900 transition-all italic"
