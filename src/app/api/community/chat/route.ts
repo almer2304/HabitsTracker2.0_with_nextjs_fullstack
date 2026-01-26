@@ -1,11 +1,10 @@
 import { db } from "@/lib/db";
 import { guildMessages, users } from "@/db/schema/schema";
 import { eq, asc } from "drizzle-orm";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";   
 
-// AMBIL PESAN (GET)
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const communityId = searchParams.get("communityId");
@@ -13,16 +12,8 @@ export async function GET(req: Request) {
   if (!communityId) return NextResponse.json({ error: "ID Missing" }, { status: 400 });
 
   try {
-    const messages = await db.query.guildMessages.findMany({
-      where: eq(guildMessages.communityId, parseInt(communityId)),
-      with: {
-        user: true, // Pastikan di db/index.ts kamu sudah mendefinisikan relations, jika belum gunakan join manual di bawah:
-      },
-      orderBy: [asc(guildMessages.createdAt)],
-    });
-
-    // Jika belum setting relations di drizzle, gunakan ini:
-    const manualMessages = await db
+    // Gunakan Select Join untuk menghindari error relasi undefined
+    const messages = await db
       .select({
         id: guildMessages.id,
         content: guildMessages.content,
@@ -37,11 +28,14 @@ export async function GET(req: Request) {
       .where(eq(guildMessages.communityId, parseInt(communityId)))
       .orderBy(asc(guildMessages.createdAt));
 
-    return NextResponse.json(manualMessages);
+    return NextResponse.json(messages);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
+    console.error("Chat GET Error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
+// POST tetap sama seperti sebelumnya karena sudah berhasil (200)
 
 // KIRIM PESAN (POST)
 export async function POST(req: Request) {
