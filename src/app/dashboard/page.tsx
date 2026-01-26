@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import { habits, users } from "@/db/schema/schema"; // Pastikan import tabel users juga
 import { eq, sql } from "drizzle-orm";
 import Sidebar from "@/components/Sidebar";
-import HabitHeatmap from "@/components/HabitHeatmap";
 import WelcomeModal from "@/components/WelcomeModal";
 import HabitStats from "@/components/HabitStats";
 import { Activity, Star, Flame } from "lucide-react";
