@@ -1,138 +1,146 @@
-import { db } from "@/lib/db";
-import { communities, guildQuests, communityMembers } from "@/db/schema/schema";
-import { eq, and } from "drizzle-orm";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { notFound, redirect } from "next/navigation";
+"use client";
+
+import { useState, useEffect, useRef, use } from "react";
+import { MessageSquare, X, Send, User, Shield, Zap } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import Sidebar from "@/components/Sidebar";
-import { Shield, Sword, Send, Users, MessageSquare } from "lucide-react";
+import { useSession } from "next-auth/react";
 
-export default async function GuildHallPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/login");
+export default function GuildHallPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const guildId = resolvedParams.id;
+  const { data: session } = useSession();
 
-  const { id } = await params;
-  const guildId = parseInt(id);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [chatList, setChatList] = useState<any[]>([]);
+  const [quests, setQuests] = useState<any[]>([]);
+  const [guild, setGuild] = useState<any>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  if (isNaN(guildId)) return notFound();
+  // FETCH DATA HALL (Guild & Quests)
+  useEffect(() => {
+    const fetchData = async () => {
+      const res = await fetch(`/api/community/${guildId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setGuild(data.guild);
+        setQuests(data.quests);
+      }
+    };
+    fetchData();
+  }, [guildId]);
 
-  // 1. Ambil Data Guild
-  const guild = await db.query.communities.findFirst({
-    where: eq(communities.id, guildId),
-  });
+  // FETCH MESSAGES
+  const fetchMessages = async () => {
+    const res = await fetch(`/api/community/chat?communityId=${guildId}`);
+    if (res.ok) {
+      const data = await res.json();
+      setChatList(data);
+    }
+  };
 
-  if (!guild) return notFound();
+  useEffect(() => {
+    if (isChatOpen) {
+      fetchMessages();
+      const interval = setInterval(fetchMessages, 3000); // Real-time polling
+      return () => clearInterval(interval);
+    }
+  }, [isChatOpen, guildId]);
 
-  // 2. Cek Member/Leader
-  const isMember = await db.query.communityMembers.findFirst({
-    where: and(
-      eq(communityMembers.communityId, guildId),
-      eq(communityMembers.userId, session.user.id)
-    ),
-  });
+  const handleSendMessage = async () => {
+    if (!message.trim()) return;
+    const content = message;
+    setMessage("");
 
-  const isLeader = guild.creatorId === session.user.id;
-  if (!isMember && !isLeader) redirect("/dashboard/community");
+    await fetch("/api/community/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ communityId: guildId, content }),
+    });
+    fetchMessages();
+  };
 
-  // 3. Ambil Daftar Quest
-  const quests = await db.select().from(guildQuests).where(eq(guildQuests.communityId, guildId));
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [chatList]);
 
   return (
-    <div className="flex bg-[#020617] min-h-screen text-slate-100">
+    <div className="relative min-h-screen bg-[#020617] text-slate-100 overflow-x-hidden">
       <Sidebar />
-      
-      <main className="w-full md:ml-64 p-4 md:p-8 pt-24 md:pt-8 flex flex-col gap-8">
-        
-        {/* HERO SECTION */}
-        <header className="p-8 bg-gradient-to-br from-blue-600/20 to-transparent border border-blue-500/20 rounded-[2.5rem] relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-10 opacity-10">
-            <Shield size={120} className="text-blue-500" />
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="px-3 py-1 bg-blue-500 text-[10px] font-black uppercase tracking-widest rounded-full">Guild Hall</span>
-            </div>
-            <h1 className="text-4xl font-black italic uppercase tracking-tighter text-white">
-              {guild.name}
-            </h1>
-            <p className="text-slate-400 mt-2 max-w-2xl font-medium text-sm">{guild.description}</p>
-          </div>
+
+      <motion.div animate={{ filter: isChatOpen ? "blur(20px)" : "blur(0px)", scale: isChatOpen ? 0.98 : 1 }} className="w-full md:ml-64 p-6 md:p-10 pt-24 md:pt-10">
+        <header className="mb-12 p-10 bg-blue-600/10 border border-blue-500/20 rounded-[3rem]">
+          <h1 className="text-5xl font-black italic uppercase text-white tracking-tighter">
+            {guild?.name || "GUILD"} <span className="text-blue-500">HALL</span>
+          </h1>
+          <p className="text-slate-400 mt-2 font-medium italic">{guild?.description}</p>
         </header>
 
-        {/* MAIN CONTENT GRID */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-          
-          {/* LEFT: MISSIONS (3 Columns on Large Screen) */}
-          <div className="xl:col-span-3 space-y-6">
-            <div className="flex items-center gap-3">
-              <Sword className="text-blue-500" size={20} />
-              <h2 className="text-lg font-black italic uppercase tracking-tight">Available Missions</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {quests.length > 0 ? (
-                quests.map((quest) => (
-                  <div key={quest.id} className="bg-slate-900/40 border border-slate-800 p-5 rounded-[2rem] hover:border-blue-500/50 transition-all group flex flex-col justify-between min-h-[200px]">
-                    <div>
-                      <div className="flex justify-between items-start mb-3 gap-2">
-                        <h3 className="text-sm font-bold text-white uppercase italic leading-tight">{quest.title}</h3>
-                        <span className="text-[9px] font-black text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded-md border border-yellow-500/20 shrink-0">
-                          +{quest.xpReward} XP
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 line-clamp-3 mb-4">{quest.description}</p>
-                    </div>
-                    <button className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black uppercase text-[9px] transition-all italic active:scale-95">
-                      Claim Reward
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full py-16 border-2 border-dashed border-slate-800 rounded-[2rem] text-center">
-                  <p className="text-slate-600 font-bold uppercase text-[10px] tracking-widest">No Strategic Objectives Found.</p>
+        {/* 3 KOLOM QUEST */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {quests.map((q) => (
+            <div key={q.id} className="bg-slate-900/40 border border-slate-800 p-8 rounded-[2.5rem] flex flex-col justify-between group">
+              <div>
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg font-black text-white uppercase italic">{q.title}</h3>
+                  <span className="text-[10px] font-black text-yellow-500">+{q.xpReward} XP</span>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT: GUILD CHAT */}
-          <div className="xl:col-span-1 h-[500px] xl:h-[calc(100vh-200px)] flex flex-col bg-slate-900/20 border border-slate-800 rounded-[2.5rem] overflow-hidden sticky top-8">
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/40">
-              <div className="flex items-center gap-2">
-                <MessageSquare size={16} className="text-blue-500" />
-                <span className="text-xs font-black uppercase italic">Guild Comms</span>
+                <p className="text-xs text-slate-500 mb-6">{q.description}</p>
               </div>
-              <Users size={14} className="text-slate-500" />
+              <button className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase text-[10px] italic transition-all">Execute Mission</button>
             </div>
-
-            {/* CHAT MESSAGES CONTAINER */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              <div className="space-y-1">
-                <span className="text-[9px] font-black text-blue-500 uppercase ml-1">System</span>
-                <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-2xl rounded-tl-none">
-                  <p className="text-[11px] text-slate-300 font-medium">Welcome to the Command Center, Hero. Communication is key to victory.</p>
-                </div>
-              </div>
-              {/* Pesan chat lain akan di-map di sini */}
-            </div>
-
-            {/* CHAT INPUT */}
-            <div className="p-4 bg-slate-900/40 border-t border-slate-800">
-              <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder="Broadcast message..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-4 pr-12 text-[11px] text-white focus:border-blue-500 outline-none transition-all"
-                />
-                <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-blue-500 hover:text-white transition-colors">
-                  <Send size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-
+          ))}
         </div>
-      </main>
+      </motion.div>
+
+      {/* TOMBOL CHAT DI KANAN BAWAH */}
+      {!isChatOpen && (
+        <button onClick={() => setIsChatOpen(true)} className="fixed bottom-10 right-10 p-6 bg-blue-600 rounded-[2rem] shadow-xl z-[100] active:scale-90 transition-transform">
+          <MessageSquare size={32} className="text-white" />
+        </button>
+      )}
+
+      {/* CHAT OVERLAY */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 backdrop-blur-md">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setIsChatOpen(false)} />
+            <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} className="bg-[#0f172a] border border-blue-500/30 w-full max-w-2xl h-[80vh] rounded-[3.5rem] flex flex-col overflow-hidden relative z-[120]">
+              <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-slate-900/60">
+                <div className="flex items-center gap-3">
+                  <Shield size={20} className="text-blue-500" />
+                  <span className="font-black uppercase italic text-white tracking-widest">Alliance Comms</span>
+                </div>
+                <button onClick={() => setIsChatOpen(false)} className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded-xl transition-all"><X size={24} /></button>
+              </div>
+
+              <div ref={scrollRef} className="flex-1 p-8 overflow-y-auto space-y-6">
+                {chatList.map((chat, i) => (
+                  <div key={i} className={`flex items-start gap-3 ${chat.user?.name === session?.user?.name ? 'flex-row-reverse' : ''}`}>
+                    <div className="w-10 h-10 rounded-full bg-blue-600 border-2 border-blue-400 flex items-center justify-center overflow-hidden shrink-0">
+                      {chat.user?.image ? <img src={chat.user.image} alt="avatar" /> : <User size={20} className="text-white" />}
+                    </div>
+                    <div className={`flex flex-col ${chat.user?.name === session?.user?.name ? 'items-end' : 'items-start'}`}>
+                      <span className="text-[10px] font-black text-blue-500 uppercase italic mb-1">{chat.user?.name || "Soldier"}</span>
+                      <div className={`p-4 rounded-2xl max-w-sm ${chat.user?.name === session?.user?.name ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-slate-800 text-slate-100 rounded-tl-none'}`}>
+                        <p className="text-sm font-medium">{chat.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-8 bg-slate-900/60 border-t border-slate-800 flex gap-4">
+                <input value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendMessage()} className="flex-1 bg-slate-950 border border-slate-800 rounded-2xl px-6 py-4 text-sm text-white outline-none focus:border-blue-500 transition-all" placeholder="Relay message..." />
+                <button onClick={handleSendMessage} className="p-4 bg-blue-600 rounded-2xl hover:bg-blue-400 transition-all"><Send size={20} /></button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
