@@ -27,26 +27,53 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Habit tidak ditemukan" }, { status: 404 });
     }
 
-    // 2. LOGIKA ANTI-CHEAT (Hanya 1x Sehari)
-    const today = new Date().toDateString();
-    const lastCheck = habitData.lastCompleted 
-      ? new Date(habitData.lastCompleted).toDateString() 
-      : null;
-
-    if (today === lastCheck) {
-      return NextResponse.json({ error: "Quest sudah selesai hari ini!" }, { status: 400 });
+    // --- LOGIKA STREAK BARU (PADAM JIKA BOLOS) ---
+    const now = new Date();
+    // Normalisasi waktu ke jam 00:00:00 untuk perbandingan tanggal saja
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    let lastCheckDate: Date | null = null;
+    if (habitData.lastCompleted) {
+      const lc = new Date(habitData.lastCompleted);
+      lastCheckDate = new Date(lc.getFullYear(), lc.getMonth(), lc.getDate());
     }
+
+    let newStreak = (habitData.currentStreak || 0);
+
+    if (lastCheckDate) {
+      const diffTime = today.getTime() - lastCheckDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) {
+        // 2. LOGIKA ANTI-CHEAT (Hanya 1x Sehari)
+        return NextResponse.json({ error: "Quest sudah selesai hari ini!" }, { status: 400 });
+      } else if (diffDays === 1) {
+        // Tepat besoknya: Streak bertambah
+        newStreak += 1;
+      } else {
+        // Bolos lebih dari 1 hari: Streak PADAM (Mulai dari 1 lagi)
+        newStreak = 1;
+      }
+    } else {
+      // Pertama kali diselesaikan
+      newStreak = 1;
+    }
+    // ---------------------------------------------
 
     // DEKLARASI DI LUAR TRANSACTION AGAR BISA DIAKSES OLEH RETURN
     const newlyEarnedBadges: any[] = [];
 
     // 3. TRANSACTION: Update Streak, XP, dan Cek Badges secara bersamaan
     await db.transaction(async (tx) => {
-      // Update Streak & LastCompleted di tabel Habit
+      // Hitung rekor streak terlama
+      const updatedLongest = Math.max(newStreak, habitData.longestStreak || 0);
+
+      // Update Streak & LastCompleted di tabel Habit menggunakan newStreak yang sudah dihitung
       await tx.update(habits)
         .set({
-          currentStreak: (habitData.currentStreak || 0) + 1,
-          lastCompleted: new Date(),
+          currentStreak: newStreak,
+          longestStreak: updatedLongest,
+          lastCompleted: now,
         })
         .where(eq(habits.id, habitId));
 
@@ -86,7 +113,7 @@ export async function PATCH(req: Request) {
 
       const stats = {
         xp: currentTotalXp,
-        streak: maxStreakRow[0].max || 0,
+        streak: maxStreakRow[0].maxStreak || 0,
         totalQuests: totalCompletedQuests[0].count || 0,
         communities: joinedCommunityResult[0].count || 0
       };
@@ -107,7 +134,7 @@ export async function PATCH(req: Request) {
         // Cek syarat berdasarkan nama badge di database
         switch (badge.name) {
           case "Tester Badge":
-            if (currentTotalXp >= 120) isEligible = true; // Langsung dapat jika XP > 1
+            if (currentTotalXp >= 120) isEligible = true; 
             break;
           case "First Step":
             if (totalQuestsCount >= 1) isEligible = true;
@@ -153,13 +180,12 @@ export async function PATCH(req: Request) {
               
             if (joinedCount[0].count >= badge.requirement) isEligible = true;
             break;
-          case "Guild Vanguard": // Contoh badge khusus member aktif guild
+          case "Guild Vanguard":
             const memberActivity = await tx
               .select({ count: sql<number>`count(*)::int` })
               .from(communityMembers)
               .where(eq(communityMembers.userId, userId));
             
-            // Jika sudah join komunitas dan punya XP besar dari guild quest
             if (memberActivity[0].count >= 1 && stats.xp >= 1000) isEligible = true;
             break;
           case "Guild Strategist":
@@ -177,15 +203,15 @@ export async function PATCH(req: Request) {
             userId: userId,
             badgeId: badge.id,
           });
-          // Masukkan objek badge yang didapat ke array newlyEarnedBadges
           newlyEarnedBadges.push(badge);
         }
       }
     });
 
-    // 6. Return response beserta data badge yang baru didapatkan
+    // 6. Return response beserta data badge dan streak terbaru
     return NextResponse.json({ 
       message: "Quest Complete! XP & Badges Updated", 
+      newStreak: newStreak,
       newBadges: newlyEarnedBadges
     });
 

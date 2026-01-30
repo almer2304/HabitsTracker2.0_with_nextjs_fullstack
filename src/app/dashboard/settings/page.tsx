@@ -11,30 +11,40 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   
+  // State form dimulai dengan data dari session (jika ada) agar tidak kosong saat awal load
   const [formData, setFormData] = useState({
-    name: "",
-    username: "",
+    name: session?.user?.name || "",
+    username: (session?.user as any)?.username || "",
   });
 
   // 1. Ambil data asli langsung dari Database saat halaman dibuka
-  // Ini lebih akurat daripada mengandalkan session yang sering 'stale' (basi)
   useEffect(() => {
+    // Sinkronkan state dengan session jika session baru masuk
+    if (session?.user) {
+      setFormData({
+        name: session.user.name || "",
+        username: (session.user as any).username || "",
+      });
+    }
+
+    // Ambil data paling fresh dari database (bypass session cache)
     async function fetchFreshData() {
       try {
-        const res = await fetch("/api/user/settings"); // Memanggil GET di API settings
+        const res = await fetch("/api/user/settings"); 
         if (res.ok) {
           const data = await res.json();
+          // Update form dengan data terbaru dari database
           setFormData({
             name: data.name || "",
             username: data.username || "",
           });
         }
       } catch (err) {
-        console.error("Failed to fetch user data", err);
+        console.error("Failed to fetch fresh user data", err);
       }
     }
     fetchFreshData();
-  }, []);
+  }, [session]); // Jalankan ulang jika session berubah
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +61,7 @@ export default function SettingsPage() {
       const updatedUser = await res.json();
 
       if (res.ok) {
-        // 2. Sinkronisasi ke Session NextAuth agar Sidebar/Header ikut berubah
+        // Sinkronisasi ke Session NextAuth agar Sidebar/Header ikut berubah secara instan
         await update({
           ...session,
           user: {
@@ -114,10 +124,10 @@ export default function SettingsPage() {
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-black uppercase text-slate-500 ml-2 tracking-widest">Display Name</label>
                 <input 
-                  value={formData.name}
+                  value={formData.name} // Terisi otomatis dari state
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="bg-slate-950 border border-slate-800 rounded-xl md:rounded-2xl px-5 py-3 md:py-4 text-sm focus:border-blue-500 outline-none transition-all"
-                  placeholder="Nama Pahlawan"
+                  className="bg-slate-950 border border-slate-800 rounded-xl md:rounded-2xl px-5 py-3 md:py-4 text-sm focus:border-blue-500 outline-none transition-all text-white"
+                  placeholder="Masukkan nama baru..."
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -125,10 +135,10 @@ export default function SettingsPage() {
                 <div className="relative">
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-600 text-sm font-bold">@</span>
                   <input 
-                    value={formData.username}
+                    value={formData.username} // Terisi otomatis dari state
                     onChange={(e) => setFormData({...formData, username: e.target.value.toLowerCase().replace(/\s/g, '')})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl md:rounded-2xl pl-10 pr-5 py-3 md:py-4 text-sm focus:border-blue-500 outline-none transition-all"
-                    placeholder="username"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl md:rounded-2xl pl-10 pr-5 py-3 md:py-4 text-sm focus:border-blue-500 outline-none transition-all text-white"
+                    placeholder="username_baru"
                   />
                 </div>
               </div>

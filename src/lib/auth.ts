@@ -16,17 +16,29 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     // 1. Simpan user ID ke dalam token JWT saat login
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // 1. SAAT LOGIN: Ambil data dari database ke dalam token
       if (user) {
         token.id = user.id;
+        token.name = user.name;
+        // Ambil username dari user adapter (drizzle)
+        token.username = (user as any).username || null;
       }
+
+      // 2. SAAT UPDATE: Jika ada trigger "update" dari frontend (Settings Page)
+      if (trigger === "update" && session) {
+        token.name = session.user.name;
+        token.username = session.user.username;
+      }
+
       return token;
     },
-    // 2. Kirim user ID dari token ke object session agar bisa dipakai di frontend
     async session({ session, token }) {
+      // 3. KIRIM KE FRONTEND: Masukkan data token ke object session agar bisa dibaca useSession()
       if (session.user) {
-        // @ts-ignore (jika typescript komplain)
         session.user.id = token.id as string;
+        session.user.name = token.name;
+        (session.user as any).username = token.username;
       }
       return session;
     },
