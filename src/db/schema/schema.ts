@@ -202,3 +202,13 @@ export const guildMessages = pgTable("guild_message", {
   content: text("content").notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
 });
+
+export const xpLogs = pgTable("xp_logs", {
+  id: serial("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  xpAmount: integer("xpAmount").notNull(), // XP yang didapat saat itu
+  totalXpSnapshot: integer("totalXpSnapshot").notNull(), // Total XP user setelah ditambah
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});

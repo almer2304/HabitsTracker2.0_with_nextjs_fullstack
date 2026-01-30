@@ -16,10 +16,10 @@ export default function HabitListClient({ initialData, userId }: { initialData: 
   const xpGain = xpTable[difficulty] || 10;
 
   try {
-    const res = await fetch("/api/habits/checkin", {
-      method: "PATCH",
+    const res = await fetch("/api/community/execute", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ habitId, xpGain }),
+      body: JSON.stringify({ xpGain: 25 }), // Kasih 25 XP per habit
     });
 
     const data = await res.json();

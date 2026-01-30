@@ -18,6 +18,26 @@ export default function GuildHallPage({ params }: { params: Promise<{ id: string
   const [guild, setGuild] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // --- FUNGSI EXECUTE MISSION (REAL DATA) ---
+  const handleExecute = async (xpReward: number, title: string) => {
+    try {
+      const res = await fetch("/api/community/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ xpGain: xpReward }),
+      });
+
+      if (res.ok) {
+        // Efek feedback sederhana (bisa diganti toast nanti)
+        alert(`MISSION ACCOMPLISHED: ${title}! You gained ${xpReward} XP.`);
+        // Refresh data atau redirect ke dashboard untuk lihat grafik
+        window.location.href = "/dashboard"; 
+      }
+    } catch (err) {
+      console.error("Failed to execute mission", err);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const res = await fetch(`/api/community/${guildId}`);
@@ -65,12 +85,10 @@ export default function GuildHallPage({ params }: { params: Promise<{ id: string
     <div className="relative min-h-screen bg-[#020617] text-slate-100 flex overflow-x-hidden">
       <Sidebar />
 
-      {/* Main Content: Ditambahkan overflow-hidden dan max-w-screen untuk cegah tembus layar */}
       <motion.div 
         animate={{ filter: isChatOpen ? "blur(10px)" : "blur(0px)" }} 
         className="flex-1 w-full md:ml-64 p-4 md:p-10 pt-20 md:pt-10 max-w-full overflow-hidden"
       >
-        {/* Header: Responsive font size */}
         <header className="mb-8 p-6 md:p-10 bg-blue-600/10 border border-blue-500/20 rounded-[2rem] md:rounded-[3rem]">
           <h1 className="text-3xl md:text-5xl font-black italic uppercase text-white leading-tight">
             {guild?.name || "GUILD"} <span className="text-blue-500">HALL</span>
@@ -82,7 +100,6 @@ export default function GuildHallPage({ params }: { params: Promise<{ id: string
           <Shield size={16} /> Available Missions
         </h2>
 
-        {/* Grid: Responsive 1 kolom (mobile) ke 3 kolom (desktop) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {quests.map((q) => (
             <div key={q.id} className="bg-slate-900/40 border border-slate-800 p-6 md:p-8 rounded-[2rem] flex flex-col justify-between group">
@@ -93,7 +110,12 @@ export default function GuildHallPage({ params }: { params: Promise<{ id: string
                 </div>
                 <p className="text-[10px] md:text-xs text-slate-500 mb-6 line-clamp-3">{q.description}</p>
               </div>
-              <button className="w-full py-3 md:py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black uppercase text-[9px] italic transition-all active:scale-95">
+              
+              {/* BUTTON SEKARANG BERFUNGSI */}
+              <button 
+                onClick={() => handleExecute(q.xpReward, q.title)}
+                className="w-full py-3 md:py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black uppercase text-[9px] italic transition-all active:scale-95 shadow-[0_0_20px_rgba(37,99,235,0.2)] hover:shadow-[0_0_25px_rgba(37,99,235,0.4)]"
+              >
                 Execute Mission
               </button>
             </div>
@@ -101,7 +123,7 @@ export default function GuildHallPage({ params }: { params: Promise<{ id: string
         </div>
       </motion.div>
 
-      {/* Floating Chat Button: Ukuran dikecilkan untuk mobile */}
+      {/* ... bagian chat tetap sama ... */}
       {!isChatOpen && (
         <button 
           onClick={() => setIsChatOpen(true)} 
@@ -111,7 +133,6 @@ export default function GuildHallPage({ params }: { params: Promise<{ id: string
         </button>
       )}
 
-      {/* Chat Overlay: Ditambahkan padding agar tidak nembus pinggir layar mobile */}
       <AnimatePresence>
         {isChatOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6 backdrop-blur-md">

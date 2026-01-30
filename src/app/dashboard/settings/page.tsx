@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { User, Bell, Shield, Save, LogOut, CheckCircle2, AlertCircle } from "lucide-react";
+import { User, Shield, Save, LogOut, CheckCircle2, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import Sidebar from "@/components/Sidebar";
 import { useSession, signOut } from "next-auth/react";
@@ -16,47 +16,61 @@ export default function SettingsPage() {
     username: "",
   });
 
-  // Load data awal dari session
+  // 1. Ambil data asli langsung dari Database saat halaman dibuka
+  // Ini lebih akurat daripada mengandalkan session yang sering 'stale' (basi)
   useEffect(() => {
-    if (session?.user) {
-      setFormData({
-        name: session.user.name || "",
-        username: (session.user as any).username || "",
-      });
+    async function fetchFreshData() {
+      try {
+        const res = await fetch("/api/user/settings"); // Memanggil GET di API settings
+        if (res.ok) {
+          const data = await res.json();
+          setFormData({
+            name: data.name || "",
+            username: data.username || "",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch user data", err);
+      }
     }
-  }, [session]);
+    fetchFreshData();
+  }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setStatus(null);
+    e.preventDefault();
+    setLoading(true);
+    setStatus(null);
 
-  try {
-    const res = await fetch("/api/user/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-
-    if (res.ok) {
-      // 1. Panggil update() untuk memberitahu NextAuth bahwa data session berubah
-      // Ini akan memicu sinkronisasi ke Sidebar dan komponen lain yang memakai session
-      await update({
-        name: formData.name,
-        username: formData.username,
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
-      setStatus({ type: "success", msg: "Profil berhasil diperbarui!" });
-    } else {
-      const data = await res.json();
-      setStatus({ type: "error", msg: data.error || "Gagal memperbarui profil" });
+      const updatedUser = await res.json();
+
+      if (res.ok) {
+        // 2. Sinkronisasi ke Session NextAuth agar Sidebar/Header ikut berubah
+        await update({
+          ...session,
+          user: {
+            ...session?.user,
+            name: updatedUser.name,
+            username: updatedUser.username,
+          },
+        });
+
+        setStatus({ type: "success", msg: "Profil berhasil diperbarui!" });
+      } else {
+        setStatus({ type: "error", msg: updatedUser.error || "Gagal memperbarui profil" });
+      }
+    } catch (err) {
+      setStatus({ type: "error", msg: "Kesalahan jaringan" });
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setStatus({ type: "error", msg: "Kesalahan jaringan" });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 flex overflow-x-hidden">
@@ -121,7 +135,7 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* SECTION: SECURITY & PREFERENCES */}
+          {/* SECTION: SECURITY */}
           <section className="bg-slate-900/40 border border-slate-800 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem]">
             <div className="flex items-center gap-3 mb-8">
               <div className="p-2 bg-blue-600/20 rounded-lg text-blue-500">
@@ -150,9 +164,10 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* FLOATING ACTION BUTTON */}
+          {/* SAVE BUTTON */}
           <div className="flex justify-end">
             <button 
+              type="submit"
               disabled={loading}
               className="w-full md:w-auto px-10 py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white font-black uppercase italic rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
             >
