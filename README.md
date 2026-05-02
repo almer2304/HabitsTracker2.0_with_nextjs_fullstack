@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎮 HabitHero: Gamified Habit Tracker
 
-## Getting Started
+**HabitHero** adalah platform pelacakan kebiasaan (habit tracker) bertema *Cyber-RPG* yang mengubah disiplin diri menjadi sebuah petualangan. Dibangun dengan teknologi modern, aplikasi ini menggabungkan produktivitas dengan elemen *gaming* seperti XP, Streak, Badges, dan Guilds untuk memastikan pengguna tetap konsisten.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🚀 Fitur Utama
+
+* **Cyber Command Center**: Dashboard utama yang menampilkan statistik vital seperti *Best Streak*, *Total XP*, dan *Active Quests*.
+* **XP Growth Timeline**: Grafik interaktif (Weekly/Monthly) untuk melacak tren produktivitas secara real-time.
+* **Streak Mechanic (TikTok Style)**: Sistem streak harian yang menantang konsistensi. Jika kamu melewatkan satu hari, api streak akan padam (reset ke 1).
+* **RPG Quest System**: Kelola kebiasaan harian sebagai "Quests". Selesaikan misi untuk mendapatkan XP dan meningkatkan progres karakter.
+* **Guilds & Community**: Bergabung dengan komunitas (Guild), berinteraksi via *Live Chat*, dan selesaikan misi bersama.
+* **Automated Badge System**: Dapatkan lencana (Badges) otomatis berdasarkan pencapaian XP, streak, atau kategori tertentu.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Framework** | [Next.js 15 (App Router)](https://nextjs.org/) |
+| **Language** | [TypeScript](https://www.typescriptlang.org/) |
+| **Database** | [PostgreSQL](https://www.postgresql.org/) |
+| **ORM** | [Drizzle ORM](https://orm.drizzle.team/) |
+| **Auth** | [NextAuth.js (JWT Strategy)](https://next-auth.js.org/) |
+| **Styling** | [Tailwind CSS](https://tailwindcss.com/) & [Framer Motion](https://www.framer.com/motion/) |
+| **Charts** | [Recharts](https://recharts.org/) |
+
+---
+
+## 📂 Struktur Proyek
+
+```text
+├── src
+│   ├── app            # Next.js App Router (Pages & API Routes)
+│   ├── components     # UI Components (Sidebar, Charts, Modals)
+│   ├── db             # Database Schema (Drizzle) & Configurations
+│   ├── lib            # Utility functions & Auth options
+│   └── hooks          # Custom React Hooks
+└── public             # Static Assets (Images & Icons)
 ```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚙️ Instalasi Lokal
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Ikuti langkah-langkah berikut untuk menjalankan proyek ini di mesin lokal Anda:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Clone repositori:**
+   ```bash
+   git clone [https://github.com/almer2304/HabitsTracker2.0_with_nextjs_fullstack.git](https://github.com/HabitsTracker2.0_with_nextjs_fullstack.git)
+   cd HabitsTracker2.0_with_nextjs_fullstack
+   ```
 
-## Learn More
+2. **Instal dependensi:**
+  ```bash
+  npm install
+  ```
 
-To learn more about Next.js, take a look at the following resources:
+3. **Konfigurasi Environment Variables:**
+  ```bash
+  DATABASE_URL=postgresql://user:password@localhost:5432/habit_tracker_db
+  NEXTAUTH_SECRET=your_secret_key
+  GOOGLE_CLIENT_ID=your_google_id
+  GOOGLE_CLIENT_SECRET=your_google_secret
+  ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. **Sinkronisasi Database:
+Gunakan Drizzle Kit untuk mendorong skema ke database lokal Anda:**
+  ```bash
+  npx drizzle-kit push
+  ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. **Jalankan Aplikasi:**
+  ```bash
+  npm run dev
+  ```
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🤝 Kontribusi
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Kami sangat menghargai kontribusi dari komunitas! Jika Anda ingin meningkatkan **HabitHero**, silakan ikuti langkah-langkah berikut:
+
+1. **Fork** repositori ini.
+2. **Buat branch** fitur baru:  
+   `git checkout -b fitur/FiturKeren`
+3. **Commit** perubahan Anda:  
+   `git commit -m 'Menambahkan fitur keren'`
+4. **Push** ke branch tersebut:  
+   `git push origin fitur/FiturKeren`
+5. **Buka Pull Request** agar kami bisa meninjau kontribusi Anda.
+
+---
+
+Dibuat dengan 🔥 oleh [Almer](https://github.com/almer2304)
+  
